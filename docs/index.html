@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>StoredSettings DEMO</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.css"
+          integrity="sha256-yImvCCH14bBb1CP+8UKH4Kq6Hd77ErtYaM4V+QSvPwc="
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/buefy@0.9.4/dist/buefy.min.css"
+          integrity="sha256-eUiH9fgckNBx/Haew+8UGdXpRQlKbdd7/tfZCzpXLFA="
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/prism-themes@1.5.0/themes/prism-darcula.css"
+          integrity="sha256-MU4lmzIrdtkHgBaiPoeY3VVRFaa/zuV+kWgX++BpBjU="
+          crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"
+            integrity="sha256-KSlsysqp7TXtFo/FHjb1T9b425x3hrvzjMWaJyKbpcI="
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/buefy@0.9.4/dist/buefy.min.js"
+            integrity="sha256-E5bEDB8CfU4r0sLWd6+Cc/ZNf64uaaZdQ0k7afkcUaQ="
+            crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div id="app" class="is-flex is-flex-direction-column is-align-content-stretch">
+      <header>
+        <div class="container">
+          <div class="hero">
+            <div class="hero-body">
+              <h1 class="title">StoredSettings</h1>
+              <h2>Vue Mixin to store data in a localStorage</h2>
+            </div>
+          </div>
+        </div>
+      </header>
+      <section class="is-flex-grow-1 is-align-items-center">
+        <div class="container">
+          <b-field label=" " horizontal>
+            <div class="is-size-4 has-text-info">The things I can change</div>
+          </b-field>
+          <b-field label="Cool" horizontal>
+            <b-switch v-model="canEdit" />
+          </b-field>
+          <b-field label="Threshold" horizontal>
+            <b-slider v-model="threshold" :min="0" :max="10" :step="1" />
+          </b-field>
+          <b-field label="Memo" horizontal>
+            <b-input v-model="memo" multiline maxlength="500" type="textarea" />
+          </b-field>
+
+          <hr>
+
+          <b-field horizontal>
+            <div class="is-size-5">
+              <span v-if="idCount < 2">
+                You could open <strong class="has-text-info">another window</strong> to take a look at local sync.
+              </span>
+              <span v-else-if="idCount === 2">
+                <strong class="has-text-success">GOOD</strong>, now change some values.
+              </span>
+              <span v-else>
+                <strong>{{ idCount }} Windows</strong> is fine, too.
+                <br>
+                The more the merrier.
+              </span>
+            </div>
+          </b-field>
+        </div>
+      </section>
+    </div>
+
+    <script src="../dist/stored-settings.iife.js"></script>
+    <script>
+Vue.use(Buefy)
+
+new Vue({
+  el: '#app',
+  mixins: [
+    StoredSettings('settings', {
+      position: {
+        type: String,
+        default: 'center',
+      },
+      canEdit: {
+        type: Boolean,
+        default: false,
+      },
+      threshold: {
+        type: Number,
+        default: 10,
+      },
+      memo: {
+        type: String,
+        default: () => 'Lorem Ipsum and so on'
+      },
+      openIds: {
+        type: Array,
+        default: []
+      },
+    })
+  ],
+  data () {
+    return {
+      id: Date.now().toString(36),
+    }
+  },
+  computed: {
+    idCount () { return this.openIds.length },
+  },
+  created () {
+    this.openIds.push(this.id)
+    addEventListener('beforeunload', () => {
+      const indexOfId = this.openIds.indexOf(this.id)
+      if (indexOfId !== -1) this.openIds.splice(indexOfId, 1)
+    })
+  },
+  beforeDestroy () {
+    const indexOfId = this.openIds.indexOf(this.id)
+    if (indexOfId !== -1) this.openIds.splice(indexOfId, 1)
+  },
+})
+    </script>
+  </body>
+</html>
