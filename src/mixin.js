@@ -91,7 +91,7 @@ export function StoredSettings(prefix, settings, storage = localStorage) {
     const storageKey = getStorageKey(key)
     let value = storage.getItem(storageKey)
     if (value == null) {
-      value = typeof setting.default === 'function' ? settings.default() : settings.default
+      value = typeof setting.default === 'function' ? setting.default() : setting.default
     }
     return setting.parse ? setting.parse(value) : value
   }

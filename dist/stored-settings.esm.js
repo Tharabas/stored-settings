@@ -33,7 +33,7 @@ const StorageTypes = [{
   serialize: value => value == null ? '' : value.toISOString()
 }];
 
-function enrichType (setting) {
+function validateType (setting) {
   let type;
   if ((type = StorageTypes.find(t => t.type === setting)) != null) {
     return type
@@ -41,7 +41,18 @@ function enrichType (setting) {
   if ((type = StorageTypes.find(t => t.type === setting.type)) != null) {
     return Object.assign({}, type, setting)
   }
-  return setting
+  if ((type = setting.type) !== null && 'parse' in type && 'serialize' in type) {
+    console.debug('Using custom type', type);
+    return Object.assign({}, type, setting)
+  }
+  if ((type = setting.type) !== null && 'parse' in type && 'toJSON' in type.prototype) {
+    console.debug('Using custom type with toJSON serializer', type);
+    return Object.assign({}, type, { serialize: value => JSON.stringify(value) }, setting)
+  }
+  if ('parse' in setting && 'serialize' in setting) {
+    return setting
+  }
+  throw new Error(`Custom type must provide 'parse' and 'serialize' static methods`)
 }
 
 const bus = new Vue({});
@@ -65,10 +76,11 @@ function StoredSettings(prefix, settings, storage = localStorage) {
     }, {});
   }
 
+
   const keys = Object.keys(settings);
   keys.forEach((key) => {
     const setting = settings[key];
-    settings[key] = enrichType(setting);
+    settings[key] = validateType(setting);
   });
 
   const getStorageKey = function (key) {
@@ -79,7 +91,7 @@ function StoredSettings(prefix, settings, storage = localStorage) {
     const storageKey = getStorageKey(key);
     let value = storage.getItem(storageKey);
     if (value == null) {
-      value = typeof setting.default === 'function' ? settings.default() : settings.default;
+      value = typeof setting.default === 'function' ? setting.default() : setting.default;
     }
     return setting.parse ? setting.parse(value) : value
   };
